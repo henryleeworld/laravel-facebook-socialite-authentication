@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
-use Auth;
-use Exception;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Auth;
+use Exception;
 use Socialite;
   
 class FacebookController extends Controller
@@ -28,26 +28,19 @@ class FacebookController extends Controller
     public function handleFacebookCallback()
     {
         try {
-            $user = Socialite::driver('facebook')->stateless()->user();
-            $finduser = User::where('facebook_id', $user->id)->first();
-            if($finduser) {
-                Auth::login($finduser);
-                return redirect('/dashboard');
-            }else{
-                $newUser = User::create([
-                    'name'                     => $user->name,
-                    'email'                    => $user->email,
-                    'facebook_id'              => $user->id,
-                    'facebook_avatar'          => $user->avatar,
-                    'facebook_avatar_original' => $user->avatar_original,
-                    'facebook_profile_url'     => $user->profileUrl,
-                    'password'                 => encrypt('123456dummy')
-                ]);
-                Auth::login($newUser);
-     
-                return redirect('/dashboard');
-            }
-    
+            $facebookUser = Socialite::driver('facebook')->stateless()->user();
+            $user = User::updateOrCreate([
+                'facebook_id'              => $facebookUser->id,
+            ], [
+                'name'                     => $facebookUser->name,
+                'email'                    => $facebookUser->email,
+                'password'                 => encrypt('123456dummy'),
+                'facebook_avatar'          => $facebookUser->avatar,
+                'facebook_avatar_original' => $facebookUser->avatar_original,
+                'facebook_profile_url'     => $facebookUser->profileUrl,
+            ]);
+            Auth::login($user);
+            return redirect('/dashboard');
         } catch (Exception $e) {
             dd($e->getMessage());
         }
